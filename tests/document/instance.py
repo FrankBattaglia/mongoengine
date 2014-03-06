@@ -1693,6 +1693,49 @@ class InstanceTest(unittest.TestCase):
         self.assertEqual(Bar.objects.count(), 1)  # No effect on the BlogPost
         self.assertEqual(Bar.objects.get().foo, None)
 
+
+    def test_register_list_subdocument_delete_rule(self):
+        """Ensure that register delete rule can add a delete rule for
+        sub-documents of list elements.
+        """
+        class Event(EmbeddedDocument):
+            person = ReferenceField(self.Person)
+            activity = StringField()
+
+        class Story(Document):
+            events = ListField(EmbeddedDocumentField(Event))
+
+        class Chapter(EmbeddedDocument):
+            events = ListField(EmbeddedDocumentField(Event))
+
+        class Book(Document):
+            chapters = ListField(EmbeddedDocumentField(Chapter))
+
+        jack = self.Person(name='jack')
+        jack.save()
+        jill = self.Person(name='jill')
+        jill.save()
+        jack_and_jill = [Event(person=jack, activity='went up the hill'),
+                         Event(person=jill, activity='went up the hill'),
+                         Event(person=jack, activity='fell down'),
+                         Event(person=jack, activity='broke his crown'),
+                         Event(person=jill, activity='came tumbling after')]
+        jack_be_nimble = [Event(person=jack, activity='was nimble'),
+                          Event(person=jack, activity='was quick'),
+                          Event(person=jack,
+                                activity='jumped over the candlestick')]
+        jack_sprat = [Event(person=jack, activity='could eat no fat'),
+                      Event(person=jill, activity='eat no lean'),
+                      Event(person=jack, activity='at the table clean'),
+                      Event(person=jill, activity='at the table clean')]
+        book = Book(chapters=[Chapter(events=jack_and_jill),
+                              Chapter(events=jack_be_nimble),
+                              Chapter(events=jack_sprat)])
+        book.save()
+        self.Person.register_delete_rule(Book, 'chapters__events__person', NULLIFY)
+        self.assertRaises(Exception):
+            jill.delete()
+
     def test_invalid_reverse_delete_rules_raise_errors(self):
 
         def throw_invalid_document_error():

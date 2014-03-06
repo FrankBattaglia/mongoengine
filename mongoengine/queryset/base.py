@@ -384,6 +384,7 @@ class BaseQuerySet(object):
 
         for rule_entry in delete_rules:
             document_cls, field_name = rule_entry
+            field_S_name = field_name
             rule = doc._meta['delete_rules'][rule_entry]
             if rule == CASCADE:
                 ref_q = document_cls.objects(**{field_name + '__in': self})
@@ -393,11 +394,11 @@ class BaseQuerySet(object):
                     ref_q.delete(write_concern=write_concern)
             elif rule == NULLIFY:
                 document_cls.objects(**{field_name + '__in': self}).update(
-                    write_concern=write_concern, **{'unset__%s' % field_name: 1})
+                    write_concern=write_concern, **{'unset__%s' % field_S_name: 1})
             elif rule == PULL:
                 document_cls.objects(**{field_name + '__in': self}).update(
                     write_concern=write_concern,
-                    **{'pull_all__%s' % field_name: self})
+                    **{'pull_all__%s' % field_S_name: self})
 
         queryset._collection.remove(queryset._query, write_concern=write_concern)
 
