@@ -34,6 +34,11 @@ class InstanceTest(unittest.TestCase):
         connect(db='mongoenginetest')
         self.db = get_db()
 
+        for collection in self.db.collection_names():
+            if 'system.' in collection:
+                continue
+            self.db.drop_collection(collection)
+
         class Person(Document):
             name = StringField()
             age = IntField()
@@ -48,7 +53,7 @@ class InstanceTest(unittest.TestCase):
         for collection in self.db.collection_names():
             if 'system.' in collection:
                 continue
-            self.db.drop_collection(collection)
+            # self.db.drop_collection(collection)
 
     def test_capped_collection(self):
         """Ensure that capped collections work properly.
